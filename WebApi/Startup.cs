@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Threading.Tasks;
 using AspNet.Security.OpenIdConnect.Primitives;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Authorization;
@@ -59,17 +61,30 @@ namespace WebApi
                 options.Password.RequireUppercase = false;
             });
 
+            services.ConfigureApplicationCookie(cookieOptions =>
+            {
+                cookieOptions.Cookie.SameSite = SameSiteMode.None;
+                cookieOptions.Cookie.Name = "auth_cookie";
+
+                cookieOptions.Events = new CookieAuthenticationEvents
+                {
+                    OnRedirectToLogin = redirectContext =>
+                    {
+                        redirectContext.HttpContext.Response.StatusCode = 401;
+                        return Task.CompletedTask;
+                    }
+                };
+            });
+
             services.AddOpenIddict()
 
                 // Register the OpenIddict core services.
                 .AddCore(options =>
                 {
-                    // Register the Entity Framework stores and models.
                     options.UseEntityFrameworkCore()
                            .UseDbContext<AuthorizationDbContext>();
                 })
 
-                // Register the OpenIddict server handler.
                 .AddServer(options =>
                 {
                     // Register the ASP.NET Core MVC binder used by OpenIddict.
@@ -77,21 +92,16 @@ namespace WebApi
                     // bind OpenIdConnectRequest or OpenIdConnectResponse parameters.
                     options.UseMvc();
 
-                    // Enable the authorization, logout, userinfo, and introspection endpoints.
                     options.EnableAuthorizationEndpoint("/connect/authorize")
-                           .EnableLogoutEndpoint("/connect/logout")
-                           .EnableIntrospectionEndpoint("/connect/introspect")
-                           .EnableUserinfoEndpoint("/api/userinfo");
+                           .EnableUserinfoEndpoint("/api/userinfo")
+                           .EnableLogoutEndpoint("/connect/logout");
 
-                    // Mark the "email", "profile" and "roles" scopes as supported scopes.
                     options.RegisterScopes(OpenIdConnectConstants.Scopes.Email,
                                            OpenIdConnectConstants.Scopes.Profile,
                                            OpenIddictConstants.Scopes.Roles);
 
-                    // Note: the sample only uses the implicit code flow but you can enable
-                    // the other flows if you need to support implicit, password or client credentials.
                     options.AllowImplicitFlow();
-
+                    
                     // During development, you can disable the HTTPS requirement.
                     options.DisableHttpsRequirement();
 
@@ -118,6 +128,7 @@ namespace WebApi
                     // encrypted format, the following line is required:
                     //
                     // options.UseJsonWebTokens();
+                    options.SetAccessTokenLifetime(TimeSpan.FromSeconds(100)); // very short access token lifetime to see silentrefresh in action.
                 })
 
                 // Register the OpenIddict validation handler.
@@ -130,8 +141,8 @@ namespace WebApi
 
             services.AddMvc(options =>
             {
-                var policy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
-                options.Filters.Add(new AuthorizeFilter(policy));
+                //var policy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+                //options.Filters.Add(new AuthorizeFilter(policy));
                 //options.Filters.Add(new ValidateAntiForgeryTokenAttribute());
             })
             .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
@@ -147,11 +158,13 @@ namespace WebApi
         {
 
             app.UseCors(builder => builder
-                .WithOrigins("https://localhost:*")
+                .WithOrigins("https://localhost:44382")
                 .WithOrigins("https://example.com")
                 .WithHeaders("Authorization")
                 .WithHeaders("x-xsrf-token", "content-type")
-                .AllowCredentials());
+                .AllowCredentials()
+                .Build());
+
 
             if (env.IsDevelopment())
             {
@@ -179,6 +192,7 @@ namespace WebApi
                 await context.Database.EnsureCreatedAsync();
 
                 await CreateApplicationsAsync();
+                await CreateScopesAsync();
 
                 async Task CreateApplicationsAsync()
                 {
@@ -190,8 +204,8 @@ namespace WebApi
                         {
                             ClientId = "angular-app",
                             DisplayName = "Angular app client application",
-                            PostLogoutRedirectUris = { new Uri("http://localhost:9000/signout-oidc") },
-                            RedirectUris = { new Uri("http://localhost:9000/signin-oidc") },
+                            PostLogoutRedirectUris = { new Uri("https://localhost:44382/bye") },
+                            RedirectUris = { new Uri("https://localhost:44382/auth-callback"), new Uri("https://localhost:44382/silentrefresh") },
                             Permissions =
                             {
                                 OpenIddictConstants.Permissions.Endpoints.Authorization,
@@ -199,7 +213,8 @@ namespace WebApi
                                 OpenIddictConstants.Permissions.GrantTypes.Implicit,
                                 OpenIddictConstants.Permissions.Scopes.Email,
                                 OpenIddictConstants.Permissions.Scopes.Profile,
-                                OpenIddictConstants.Permissions.Scopes.Roles
+                                OpenIddictConstants.Permissions.Scopes.Roles,
+                                OpenIddictConstants.Permissions.Prefixes.Scope + "api1"
                             }
                         };
 
@@ -207,6 +222,21 @@ namespace WebApi
                     }
 
 
+                }
+                async Task CreateScopesAsync()
+                {
+                    var manager = scope.ServiceProvider.GetRequiredService<OpenIddictScopeManager<OpenIddictScope>>();
+
+                    if (await manager.FindByNameAsync("api1") == null)
+                    {
+                        var descriptor = new OpenIddictScopeDescriptor
+                        {
+                            Name = "api1",
+                            Resources = { "resource-server-1" }
+                        };
+
+                        await manager.CreateAsync(descriptor);
+                    }
                 }
             }
         }

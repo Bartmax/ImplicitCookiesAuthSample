@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using AspNet.Security.OpenIdConnect.Extensions;
 using AspNet.Security.OpenIdConnect.Primitives;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -23,6 +24,7 @@ using WebApi.ViewModels.Shared;
 
 namespace WebApi.Controllers
 {
+    [AllowAnonymous]
     public class AuthorizationController : Controller
     {
         private readonly IOptions<IdentityOptions> _identityOptions;

@@ -9,7 +9,7 @@ using WebApi.ViewModels.Account;
 namespace WebApi.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class AccountController : ControllerBase
     {
         private readonly UserManager<ApplicationUser> _userManager;
@@ -28,13 +28,22 @@ namespace WebApi.Controllers
         [IgnoreAntiforgeryToken]
         public ActionResult<string> Index()
         {
-            return Ok("it works");
+            return Ok("authorization server is working.");
         }
 
 
+        [HttpGet("username")]
+        [AllowAnonymous]
+        public ActionResult<string> Username()
+        {
+            return User.Identity.Name;
+        }
+
         [HttpPost("login")]
         [AllowAnonymous]
-        [ValidateAntiForgeryToken]
+        
+        // TODO: ADD ANTI FORGERY
+        //[ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginUserBinding binding)
         {
             if (ModelState.IsValid)
@@ -63,10 +72,11 @@ namespace WebApi.Controllers
             return BadRequest(ModelState);
         }
 
-        // POST: /Account/Register
         [HttpPost("register")]
         [AllowAnonymous]
-        [ValidateAntiForgeryToken]
+
+        // TODO: ADD ANTI FORGERY
+        //[ValidateAntiForgeryToken] 
         public async Task<IActionResult> Register(RegisterUserBinding binding)
         {
             if (ModelState.IsValid)
@@ -76,7 +86,7 @@ namespace WebApi.Controllers
                 if (result.Succeeded)
                 {
                     await _signInManager.SignInAsync(user, isPersistent: false);
-                    return Created(default(string),result);
+                    return Created("",result);
                 }
                 AddErrors(result);
             }
@@ -84,8 +94,9 @@ namespace WebApi.Controllers
             return BadRequest(ModelState);
         }
 
-        [HttpPost("logoff")]
-        [ValidateAntiForgeryToken]
+        [HttpPost("logout")]
+        //[ValidateAntiForgeryToken]
+        [AllowAnonymous]
         public async Task<IActionResult> LogOff()
         {
             await _signInManager.SignOutAsync();

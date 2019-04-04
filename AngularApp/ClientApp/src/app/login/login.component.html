@@ -1,0 +1,18 @@
+<form>
+  <fieldset>
+    <legend>Login</legend>
+    <div class="form-group">
+      <label for="login_email">Email/Username: </label>
+      <input class="form-control" type="text" id="login_email" #loginEmail>
+    </div>
+    <div class="form-group">
+      <label for="login_password">Password: </label>
+      <input class="form-control" type="password" id="login_password" #loginPassword>
+    </div>
+    <div class="is-invalid">{{loginFeedback}}</div>
+    <div>
+      <button class="btn btn-primary" (click)="login(loginEmail.value, loginPassword.value)">Login</button>
+      <button class="btn btn-secondary ml-5" (click)="logout()">Logout</button>
+    </div>
+  </fieldset>
+</form>

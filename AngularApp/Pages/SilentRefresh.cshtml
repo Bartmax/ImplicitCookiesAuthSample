@@ -1,0 +1,14 @@
+﻿@page
+@model AngularApp.Pages.SilentRefreshModel
+<head>
+    <title></title>
+</head>
+<body>
+    <script src="~/oidc-client/oidc-client.min.js"></script>
+    <script>
+        new Oidc.UserManager().signinSilentCallback()
+            .catch((err) => {
+                console.log(err);
+            });
+    </script>
+</body>

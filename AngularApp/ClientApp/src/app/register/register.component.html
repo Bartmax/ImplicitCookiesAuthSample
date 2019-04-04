@@ -1,0 +1,24 @@
+<form>
+  <fieldset>
+    <legend>Create a new user</legend>
+    <div class="form-group">
+      <label for="register_email">Email/Username: </label>
+      <input class="form-control" type="text" id="register_email" #registerEmail>
+    </div>
+    <div class="form-group">
+      <label for="register_password">Password: </label>
+      <input class="form-control" type="password" id="register_password" #registerPassword>
+      <small id="passwordHelpBlock" class="form-text text-muted">
+        Your password must be at least 8 characters long and have at least one space, special character, or emoji.
+      </small>
+    </div>
+    <div class="form-group">
+      <label for="register_repassword">Retype password: </label>
+      <input class="form-control" type="password" id="register_repassword" #registerRePassword>
+    </div>
+    <div class="is-invalid">{{registerFeedback}}</div>
+    <div>
+      <button class="btn btn-success" (click)="register(registerEmail.value, registerPassword.value, registerRePassword.value)">Create New User</button>
+    </div>
+  </fieldset>
+</form>

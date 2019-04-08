@@ -1,7 +1,7 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { HttpClientModule } from '@angular/common/http';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 
 import { AppComponent } from './app.component';
@@ -15,6 +15,7 @@ import { AuthGuardService } from './services/auth-guard.service';
 import { AuthService } from './services/auth.service';
 import { AuthCallbackComponent } from './auth-callback/auth-callback.component';
 import { ByeComponent } from './bye/bye.component';
+import { AddCsrfHeaderInterceptor } from './add-csrf-header-interceptor';
 
 @NgModule({
   declarations: [
@@ -42,7 +43,11 @@ import { ByeComponent } from './bye/bye.component';
       { path: 'bye', component: ByeComponent }
     ])
   ],
-  providers: [AuthGuardService, AuthService],
+  providers: [
+    AuthService,
+    AuthGuardService,
+    { provide: HTTP_INTERCEPTORS, useClass: AddCsrfHeaderInterceptor, multi: true }
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

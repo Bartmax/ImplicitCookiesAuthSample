@@ -1,14 +1,14 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using AspNet.Security.OpenIdConnect.Primitives;
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -76,6 +76,11 @@ namespace WebApi
                 };
             });
 
+            services.AddAntiforgery(antiforgeryOptions =>
+            {
+                antiforgeryOptions.HeaderName = "X-XSRF-TOKEN";
+            });
+
             services.AddOpenIddict()
 
                 // Register the OpenIddict core services.
@@ -101,7 +106,7 @@ namespace WebApi
                                            OpenIddictConstants.Scopes.Roles);
 
                     options.AllowImplicitFlow();
-                    
+
                     // During development, you can disable the HTTPS requirement.
                     options.DisableHttpsRequirement();
 
@@ -147,15 +152,31 @@ namespace WebApi
             })
             .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
+            // We don't configure cookie here because it's not usable on JS and that's why we create it using an inline "middleware" below (see Configure).
+            // Also the context of the antiforgery cookie generated here is not the same as the Antiforgery token? Com'on MS.
             services.AddAntiforgery(antiforgeryOptions =>
             {
-                antiforgeryOptions.HeaderName = "X-XSRF-TOKEN";
+                // This is the header ASPNET will inspect for the Antiforgery token. 
+                // Must be set (and match) on client (angular) app. See add-csrf-header-interceptor.ts
+                antiforgeryOptions.HeaderName = "X-XSRF-TOKEN"; 
             });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, IAntiforgery antiforgery)
         {
+
+            app.Use(next => context =>
+            {
+                // Do we need to match a particular endpoint / verb here ??
+
+                var tokens = antiforgery.GetAndStoreTokens(context);
+                context.Response.Cookies.Append("XSRF-TOKEN", tokens.RequestToken, new CookieOptions() // we rewrite the cookie as httponly:false.
+                {
+                    HttpOnly = false
+                });
+                return next(context);
+            });
 
             app.UseCors(builder => builder
                 .WithOrigins("https://localhost:44382")

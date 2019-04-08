@@ -43,7 +43,7 @@ namespace WebApi.Controllers
         [AllowAnonymous]
         
         // TODO: ADD ANTI FORGERY
-        //[ValidateAntiForgeryToken]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginUserBinding binding)
         {
             if (ModelState.IsValid)

@@ -12,7 +12,6 @@ export class AuthCallbackComponent implements OnInit {
 
   ngOnInit() {
     this.authService.completeAuthentication();
-    console.log("callback called");
   }
 
 }

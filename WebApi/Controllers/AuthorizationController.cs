@@ -9,10 +9,8 @@ using System.Collections.Immutable;
 using System.Threading.Tasks;
 using AspNet.Security.OpenIdConnect.Extensions;
 using AspNet.Security.OpenIdConnect.Primitives;
-using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -33,23 +31,22 @@ namespace WebApi.Controllers
         private readonly OpenIddictScopeManager<OpenIddictScope> _scopeManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly IAntiforgery antiforgery;
+        private const string IdentityScheme = "Identity.Application";
 
         public AuthorizationController(
             IOptions<IdentityOptions> identityOptions,
             OpenIddictScopeManager<OpenIddictScope> scopeManager,
             SignInManager<ApplicationUser> signInManager,
-            UserManager<ApplicationUser> userManager, 
-            IAntiforgery antiforgery)
+            UserManager<ApplicationUser> userManager)
         {
             _identityOptions = identityOptions;
             _scopeManager = scopeManager;
             _signInManager = signInManager;
             _userManager = userManager;
-            this.antiforgery = antiforgery;
         }
 
         [HttpGet("~/connect/authorize")]
+        [Authorize(AuthenticationSchemes = IdentityScheme)] // Allow authentication with Cookie
         public async Task<IActionResult> Authorize([ModelBinder(typeof(OpenIddictMvcBinder))] OpenIdConnectRequest request)
         {
             if (!User.Identity.IsAuthenticated)
@@ -90,6 +87,7 @@ namespace WebApi.Controllers
         }
 
         [HttpGet("~/connect/logout")]
+        [Authorize(AuthenticationSchemes = IdentityScheme)] // Allow authentication with Cookie
         public async Task<IActionResult> Logout()
         {
             // Ask ASP.NET Core Identity to delete the local and external cookies created

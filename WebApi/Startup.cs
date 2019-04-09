@@ -3,12 +3,15 @@ using System.Linq;
 using System.Threading.Tasks;
 using AspNet.Security.OpenIdConnect.Primitives;
 using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -45,24 +48,27 @@ namespace WebApi
             // which saves you from doing the mapping in your authorization controller.
             services.Configure<IdentityOptions>(options =>
             {
+                
                 options.ClaimsIdentity.UserNameClaimType = OpenIdConnectConstants.Claims.Name;
                 options.ClaimsIdentity.UserIdClaimType = OpenIdConnectConstants.Claims.Subject;
                 options.ClaimsIdentity.RoleClaimType = OpenIdConnectConstants.Claims.Role;
 
-                // "Lax" requirements because doesn't make any sense from a security stand point it's more password managers friendly.
+                // "Lax" requirements because requirements doesn't make any sense from a security point of view and this is more password managers friendly.
                 options.Password.RequireDigit = false;
                 options.Password.RequiredLength = 8; // increase the length, this is the only thing that "really" matters.
                 options.Password.RequiredUniqueChars = 1; // At least 1 char is used in all password managers algorithms so safe to include and may prevent sloppy passwords.
                 options.Password.RequireLowercase = false;
                 options.Password.RequireNonAlphanumeric = false;
                 options.Password.RequireUppercase = false;
+
+                
             });
 
             services.ConfigureApplicationCookie(cookieOptions =>
             {
                 cookieOptions.Cookie.SameSite = SameSiteMode.None;
                 cookieOptions.Cookie.Name = "auth_cookie";
-
+                
                 cookieOptions.Events = new CookieAuthenticationEvents
                 {
                     OnRedirectToLogin = redirectContext =>
@@ -140,12 +146,14 @@ namespace WebApi
                 .AddValidation();
 
             services.AddCors();
-
+            
             services.AddMvc(options =>
             {
-                //var policy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
-                //options.Filters.Add(new AuthorizeFilter(policy));
-                //options.Filters.Add(new ValidateAntiForgeryTokenAttribute());
+                var policy = new AuthorizationPolicyBuilder(OpenIdConnectConstants.Schemes.Bearer) // force every api call have an authenticated user using bearer? Not sure!
+                                .RequireAuthenticatedUser()
+                                .Build();
+                options.Filters.Add(new AuthorizeFilter(policy));
+
             })
             .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 

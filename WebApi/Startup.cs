@@ -48,10 +48,7 @@ namespace WebApi
                 options.ClaimsIdentity.UserNameClaimType = OpenIdConnectConstants.Claims.Name;
                 options.ClaimsIdentity.UserIdClaimType = OpenIdConnectConstants.Claims.Subject;
                 options.ClaimsIdentity.RoleClaimType = OpenIdConnectConstants.Claims.Role;
-            });
 
-            services.Configure<IdentityOptions>(options =>
-            {
                 // "Lax" requirements because doesn't make any sense from a security stand point it's more password managers friendly.
                 options.Password.RequireDigit = false;
                 options.Password.RequiredLength = 8; // increase the length, this is the only thing that "really" matters.

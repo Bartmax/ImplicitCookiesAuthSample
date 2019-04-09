@@ -25,24 +25,13 @@ namespace WebApi.Controllers
 
         [HttpGet("")]
         [AllowAnonymous]
-        [IgnoreAntiforgeryToken]
         public ActionResult<string> Index()
         {
             return Ok("authorization server is working.");
         }
 
-
-        [HttpGet("username")]
-        [AllowAnonymous]
-        public ActionResult<string> Username()
-        {
-            return User.Identity.Name;
-        }
-
         [HttpPost("login")]
         [AllowAnonymous]
-        
-        // TODO: ADD ANTI FORGERY
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginUserBinding binding)
         {
@@ -74,9 +63,7 @@ namespace WebApi.Controllers
 
         [HttpPost("register")]
         [AllowAnonymous]
-
-        // TODO: ADD ANTI FORGERY
-        //[ValidateAntiForgeryToken] 
+        [ValidateAntiForgeryToken] 
         public async Task<IActionResult> Register(RegisterUserBinding binding)
         {
             if (ModelState.IsValid)
@@ -95,7 +82,7 @@ namespace WebApi.Controllers
         }
 
         [HttpPost("logout")]
-        //[ValidateAntiForgeryToken]
+        [ValidateAntiForgeryToken]
         [AllowAnonymous]
         public async Task<IActionResult> LogOff()
         {
